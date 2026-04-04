@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "node -e \"if (process.platform !== 'win32') require('child_process').execSync('chmod -R 755 node_modules/.bin', {stdio: 'ignore'})\""
   },
   "dependencies": {
     "three": "^0.168.0"
