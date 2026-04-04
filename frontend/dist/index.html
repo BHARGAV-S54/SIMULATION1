@@ -1,0 +1,1778 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriMind – Advanced Multi-Drone Fleet Management</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --primary:#00ff88;--primary-dark:#00cc66;--danger:#ff3366;--warning:#ffaa00;
+  --info:#00aaff;--success:#22cc55;--purple:#8855ff;--orange:#ff6600;
+  --bg-primary:#0f1f0f;--bg-secondary:#1a2e1a;--bg-tertiary:#0a150a;
+  --glass-bg:rgba(15,45,25,0.85);--glass-border:rgba(0,255,136,0.3);
+  --text-primary:#f0fff0;--text-secondary:#a0d0a0;--text-muted:#708070;
+}
+
+body{
+  background:linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 50%, var(--bg-secondary) 100%);
+  color:var(--text-primary);font-family:'Exo 2',sans-serif;overflow:hidden;height:100vh;width:100vw;
+  position:relative;
+}
+
+body::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 80%, rgba(0,255,136,0.1) 0%, transparent 50%),
+             radial-gradient(circle at 80% 20%, rgba(0,170,255,0.08) 0%, transparent 50%);
+  pointer-events:none;z-index:-1;
+}
+
+#canvas{display:block;width:100%;height:100%;filter:brightness(1.1) contrast(1.05);}
+
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:64px;
+  background:var(--glass-bg);border-bottom:2px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 32px;
+  pointer-events:all;backdrop-filter:blur(20px);z-index:20;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+
+.brand{
+  display:flex;align-items:center;gap:16px;
+  font-size:1.8rem;font-weight:800;color:var(--primary);
+  letter-spacing:0.05em;text-transform:uppercase;
+}
+
+.brand-icon{
+  width:48px;height:48px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  border-radius:12px;display:grid;place-items:center;
+  font-size:24px;box-shadow:0 4px 16px rgba(0,255,136,0.3);
+  animation:iconPulse 3s infinite;
+}
+
+@keyframes iconPulse{
+  0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(0,255,136,0.3);}
+  50%{transform:scale(1.05);box-shadow:0 6px 24px rgba(0,255,136,0.5);}
+}
+
+.fleet-status{
+  display:flex;gap:12px;align-items:center;
+  background:rgba(0,255,136,0.1);border:2px solid var(--glass-border);
+  border-radius:16px;padding:8px 16px;
+}
+
+.fleet-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:0 12px;border-right:1px solid var(--glass-border);
+}
+.fleet-item:last-child{border-right:none;}
+
+.fleet-count{font-size:1.4rem;font-weight:700;color:var(--primary);}
+.fleet-label{font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;}
+
+.status-chips{display:flex;gap:8px;align-items:center;}
+.chip{
+  padding:6px 12px;border-radius:20px;font-size:0.7rem;font-weight:600;
+  letter-spacing:0.05em;display:flex;align-items:center;gap:6px;
+  text-transform:uppercase;
+}
+.chip.active{background:rgba(0,255,136,0.2);border:2px solid var(--primary);color:var(--primary);}
+.chip.warning{background:rgba(255,170,0,0.2);border:2px solid var(--warning);color:var(--warning);}
+.chip.info{background:rgba(0,170,255,0.2);border:2px solid var(--info);color:var(--info);}
+
+.pulse-dot{
+  width:8px;height:8px;border-radius:50%;
+  animation:blink 1.5s infinite;
+}
+.pulse-dot.active{background:var(--primary);}
+.pulse-dot.warning{background:var(--warning);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+#left-panel{
+  position:fixed;left:20px;top:80px;width:280px;
+  display:flex;flex-direction:column;gap:12px;pointer-events:all;z-index:15;
+}
+
+.panel-section{
+  background:var(--glass-bg);border:2px solid var(--glass-border);
+  border-radius:16px;padding:20px;backdrop-filter:blur(20px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+
+.section-title{
+  font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--text-secondary);margin-bottom:16px;font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+
+.drone-card{
+  background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);
+  border-radius:12px;padding:12px;margin-bottom:8px;
+  transition:all 0.3s ease;
+}
+
+.drone-card:hover{
+  background:rgba(0,255,136,0.1);border-color:var(--primary);
+  transform:translateX(4px);
+}
+
+.drone-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;
+}
+
+.drone-name{
+  font-size:0.9rem;font-weight:600;color:var(--text-primary);
+}
+
+.drone-status{
+  padding:2px 8px;border-radius:8px;font-size:0.6rem;
+  font-weight:600;text-transform:uppercase;
+}
+.drone-status.active{background:var(--success);color:white;}
+.drone-status.charging{background:var(--warning);color:white;}
+.drone-status.maintenance{background:var(--danger);color:white;}
+
+.drone-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  font-size:0.7rem;
+}
+
+.stat-item{
+  display:flex;justify-content:space-between;
+  color:var(--text-secondary);
+}
+
+.stat-value{
+  color:var(--text-primary);font-weight:600;
+}
+
+.battery-indicator{
+  height:4px;background:rgba(255,255,255,0.1);
+  border-radius:2px;margin-top:6px;overflow:hidden;
+}
+
+.battery-fill{
+  height:100%;border-radius:2px;
+  transition:width 0.5s,background-color 0.3s;
+}
+
+#right-panel{
+  position:fixed;right:20px;top:80px;width:300px;
+  display:flex;flex-direction:column;gap:12px;pointer-events:all;z-index:15;
+}
+
+.control-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin-bottom:16px;
+}
+
+.control-btn{
+  padding:12px;border:2px solid var(--glass-border);
+  border-radius:12px;background:rgba(0,255,136,0.1);
+  color:var(--primary);cursor:pointer;
+  font-size:0.7rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  transition:all 0.3s ease;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+
+.control-btn:hover{
+  background:rgba(0,255,136,0.2);
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,255,136,0.2);
+}
+
+.control-btn.active{
+  background:var(--primary);color:var(--bg-primary);
+  border-color:var(--primary);
+  box-shadow:0 8px 24px rgba(0,255,136,0.4);
+}
+
+.btn-icon{font-size:1.2rem;}
+.btn-label{font-size:0.6rem;}
+
+.mission-progress{
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;padding:16px;
+  margin-top:16px;
+}
+
+.progress-header{
+  display:flex;justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.progress-title{
+  font-size:0.8rem;color:var(--text-secondary);
+}
+
+.progress-value{
+  font-size:0.8rem;font-weight:600;color:var(--primary);
+}
+
+.progress-bar{
+  height:8px;background:rgba(255,255,255,0.1);
+  border-radius:4px;overflow:hidden;
+  position:relative;
+}
+
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--primary),var(--success));
+  border-radius:4px;transition:width 1s ease;
+  position:relative;overflow:hidden;
+}
+
+.progress-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+  animation:shimmer 2s infinite;
+}
+
+@keyframes shimmer{
+  0%{transform:translateX(-100%);}
+  100%{transform:translateX(100%);}
+}
+
+#bottom-hud{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  width:90%;max-width:1200px;
+  background:var(--glass-bg);border:2px solid var(--glass-border);
+  border-radius:20px;padding:16px 24px;
+  backdrop-filter:blur(20px);pointer-events:all;z-index:15;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+
+.hud-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:16px;align-items:center;
+}
+
+.hud-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:rgba(255,255,255,0.05);
+  border-radius:12px;transition:all 0.3s ease;
+  cursor:pointer;
+}
+
+.hud-item:hover{
+  background:rgba(0,255,136,0.1);
+  transform:translateY(-2px);
+}
+
+.hud-icon{font-size:1.4rem;}
+.hud-data{display:flex;flex-direction:column;}
+.hud-label{font-size:0.6rem;color:var(--text-secondary);text-transform:uppercase;}
+.hud-value{font-size:0.9rem;font-weight:600;color:var(--text-primary);}
+
+#camera-bar{
+  position:fixed;top:72px;left:50%;transform:translateX(-50%);
+  display:flex;gap:6px;padding:6px 12px;
+  background:var(--glass-bg);border:2px solid var(--glass-border);
+  border-radius:20px;backdrop-filter:blur(20px);z-index:18;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.cam-btn{
+  padding:6px 14px;border:1px solid var(--glass-border);border-radius:14px;
+  background:rgba(0,255,136,0.06);color:var(--text-secondary);
+  cursor:pointer;font-size:0.65rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:0.05em;transition:all 0.3s ease;font-family:'Exo 2',sans-serif;
+  display:flex;align-items:center;gap:5px;
+}
+.cam-btn:hover{background:rgba(0,255,136,0.15);color:var(--primary);}
+.cam-btn.active{background:var(--primary);color:var(--bg-primary);border-color:var(--primary);box-shadow:0 4px 12px rgba(0,255,136,0.3);}
+
+#toast-container{
+  position:fixed;top:90px;right:20px;
+  display:flex;flex-direction:column;gap:8px;
+  z-index:25;pointer-events:none;
+}
+
+.toast{
+  background:var(--glass-bg);border:2px solid var(--glass-border);
+  border-radius:12px;padding:12px 16px;
+  backdrop-filter:blur(20px);
+  color:var(--text-primary);font-size:0.8rem;
+  max-width:300px;transform:translateX(100%);
+  opacity:0;transition:all 0.4s ease;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+
+.toast.show{
+  transform:translateX(0);opacity:1;
+}
+
+.toast.success{border-color:var(--success);}
+.toast.warning{border-color:var(--warning);}
+.toast.danger{border-color:var(--danger);}
+
+.coordination-display{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,20,10,0.95);border:3px solid var(--primary);
+  border-radius:20px;padding:24px;z-index:30;
+  display:none;backdrop-filter:blur(25px);
+  box-shadow:0 16px 64px rgba(0,255,136,0.3);
+  min-width:400px;
+}
+
+.coordination-display.show{display:block;animation:modalIn 0.5s ease;}
+@keyframes modalIn{
+  from{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1);}
+}
+
+.spray-visualization{
+  position:fixed;inset:0;pointer-events:none;z-index:5;
+  display:none;
+}
+
+.spray-visualization.active{
+  display:block;
+  background:radial-gradient(circle,rgba(0,255,136,0.1) 0%,transparent 70%);
+  animation:sprayPulse 2s infinite;
+}
+
+@keyframes sprayPulse{0%,100%{opacity:0.5;}50%{opacity:0.8;}}
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-icon">🚁</div>
+    AgriMind Fleet Command
+  </div>
+  
+  <div class="fleet-status">
+    <div class="fleet-item">
+      <div class="fleet-count" id="fleet-count">3</div>
+      <div class="fleet-label">Active Drones</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-count" id="spray-count">0</div>
+      <div class="fleet-label">Spraying</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-count" id="scanned-total">0</div>
+      <div class="fleet-label">Plants Scanned</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-count" id="bugs-active" style="color:#ff6644">15</div>
+      <div class="fleet-label">Bugs Active</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-count" id="bugs-killed" style="color:#ffaa00">0</div>
+      <div class="fleet-label">Bugs Killed</div>
+    </div>
+  </div>
+  
+  <div class="status-chips">
+    <div class="chip active">
+      <div class="pulse-dot active"></div>
+      Fleet Online
+    </div>
+    <div class="chip info">Coordinated Mode</div>
+    <div class="chip warning" id="weather-chip">
+      <div class="pulse-dot warning"></div>
+      <span id="wind-display">Wind: 8km/h</span>
+    </div>
+  </div>
+</div>
+
+<div id="left-panel">
+  <div class="panel-section">
+    <div class="section-title">🚁 Drone Fleet Status</div>
+    <div id="drone-fleet"></div>
+  </div>
+  
+  <div class="panel-section">
+    <div class="section-title">📊 Mission Analytics</div>
+    <div class="mission-progress">
+      <div class="progress-header">
+        <div class="progress-title">Field Coverage</div>
+        <div class="progress-value" id="coverage-percent">0%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="coverage-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="mission-progress">
+      <div class="progress-header">
+        <div class="progress-title">Disease Detection</div>
+        <div class="progress-value" id="disease-percent">0%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="disease-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="mission-progress">
+      <div class="progress-header">
+        <div class="progress-title">Spray Efficiency</div>
+        <div class="progress-value" id="efficiency-percent">0%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="efficiency-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="mission-progress">
+      <div class="progress-header">
+        <div class="progress-title">Bug Elimination</div>
+        <div class="progress-value" id="bug-percent">0%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="bug-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="right-panel">
+  <div class="panel-section">
+    <div class="section-title">🎮 Fleet Control</div>
+    <div class="control-grid">
+      <div class="control-btn active" id="auto-formation" onclick="toggleFormation()">
+        <div class="btn-icon">⚡</div>
+        <div class="btn-label">Formation</div>
+      </div>
+      <div class="control-btn active" id="precision-spray" onclick="togglePrecisionSpray()">
+        <div class="btn-icon">🎯</div>
+        <div class="btn-label">Spray</div>
+      </div>
+      <div class="control-btn active" id="auto-scan-btn" onclick="toggleAutoScan()">
+        <div class="btn-icon">📡</div>
+        <div class="btn-label">Auto Scan</div>
+      </div>
+      <div class="control-btn" id="return-all" onclick="returnAllToBase()">
+        <div class="btn-icon">↔</div>
+        <div class="btn-label">Return All</div>
+      </div>
+      <div class="control-btn" id="emergency-stop" onclick="emergencyStop()">
+        <div class="btn-icon">⛔</div>
+        <div class="btn-label">Emergency</div>
+      </div>
+      <div class="control-btn" id="night-mode" onclick="toggleNightMode()">
+        <div class="btn-icon">🌙</div>
+        <div class="btn-label">Night Mode</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="panel-section">
+    <div class="section-title">📡 Coordination</div>
+    <div id="coordination-info">
+      <div style="margin-bottom:12px;">
+        <strong>Formation:</strong> <span id="formation-type">Grid Search</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong>Communication:</strong> <span style="color:var(--success);">Optimal</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong>Interference:</strong> <span id="interference-level">Low</span>
+      </div>
+      <div>
+        <strong>Sync Status:</strong> <span style="color:var(--primary);">Perfect</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="bottom-hud">
+  <div class="hud-grid">
+    <div class="hud-item">
+      <div class="hud-icon">🌡️</div>
+      <div class="hud-data">
+        <div class="hud-label">Temperature</div>
+        <div class="hud-value" id="hud-temp">29&deg;C</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">💧</div>
+      <div class="hud-data">
+        <div class="hud-label">Humidity</div>
+        <div class="hud-value" id="hud-humidity">68%</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">💨</div>
+      <div class="hud-data">
+        <div class="hud-label">Wind Speed</div>
+        <div class="hud-value" id="hud-wind">8km/h</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">🧪</div>
+      <div class="hud-data">
+        <div class="hud-label">Pesticide</div>
+        <div class="hud-value" id="hud-pesticide">847L</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">⚡</div>
+      <div class="hud-data">
+        <div class="hud-label">Efficiency</div>
+        <div class="hud-value" id="hud-efficiency">94%</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">🐛</div>
+      <div class="hud-data">
+        <div class="hud-label">Bugs Killed</div>
+        <div class="hud-value" id="hud-bugs-killed">0</div>
+      </div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-icon">🗺️</div>
+      <div class="hud-data">
+        <div class="hud-label">Coverage</div>
+        <div class="hud-value" id="hud-coverage">0 ha</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="camera-bar">
+  <button class="cam-btn active" onclick="setCameraMode('overview')" id="cam-overview">🌍 Overview</button>
+  <button class="cam-btn" onclick="setCameraMode('follow')" id="cam-follow">🚁 Follow</button>
+  <button class="cam-btn" onclick="setCameraMode('topdown')" id="cam-topdown">¬‡ï¸ Top-Down</button>
+  <button class="cam-btn" onclick="setCameraMode('cinematic')" id="cam-cinematic">🎬 Cinematic</button>
+  <button class="cam-btn" onclick="setCameraMode('side')" id="cam-side">👁️ Side</button>
+</div>
+
+<div id="toast-container"></div>
+<div class="spray-visualization" id="spray-viz"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+let scene, camera, renderer, field;
+let drones = [], crops = [], diseaseSpots = [];
+let isFormationMode = true, isPrecisionSpray = true, isNightMode = false, isAutoScan = true;
+let fieldCoverage = 0, diseaseDetection = 0, sprayEfficiency = 0;
+let totalScanned = 0, activeDrones = 3, sprayingDrones = 0;
+let cameraMode = 'overview';
+let selectedDroneId = null;
+let time = 0;
+let emergencyActive = false;
+
+const droneConfigs = [
+  { id: 'ALPHA-01', position: { x: -20, z: -15 }, battery: 87, pesticide: 145 },
+  { id: 'BETA-02', position: { x: 0, z: -15 }, battery: 92, pesticide: 132 },
+  { id: 'GAMMA-03', position: { x: 20, z: -15 }, battery: 78, pesticide: 89 }
+];
+
+let bugs = [];
+let bugsKilled = 0;
+let bugsActive = 15;
+let audioCtx = null;
+let audioEnabled = false;
+let windSpeed = 8;
+let sprayOscillators = [];
+let windNode = null;
+let propellerNodes = [];
+
+function init() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x0f1f0f, 80, 400);
+  
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 55, 80);
+  camera.lookAt(0, 0, 0);
+  
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x0f1f0f);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  
+  const ambient = new THREE.AmbientLight(0x556655, 0.8);
+  scene.add(ambient);
+  
+  const mainLight = new THREE.DirectionalLight(0xfff8e0, 1.6);
+  mainLight.position.set(80, 120, 40);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.width = 2048;
+  mainLight.shadow.mapSize.height = 2048;
+  mainLight.shadow.camera.near = 0.5;
+  mainLight.shadow.camera.far = 500;
+  mainLight.shadow.camera.left = -250;
+  mainLight.shadow.camera.right = 250;
+  mainLight.shadow.camera.top = 250;
+  mainLight.shadow.camera.bottom = -250;
+  scene.add(mainLight);
+  
+  createField();
+  createTreesAlongPaths();
+  createDrones();
+  createChargingStation();
+  createBugs();
+  generateDroneCards();
+  
+  document.addEventListener('click', enableAudio, { once: true });
+  document.addEventListener('keydown', enableAudio, { once: true });
+  
+  animate();
+}
+
+function enableAudio() {
+  if (audioEnabled) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    initSounds();
+    audioEnabled = true;
+    showToast('🔊 Audio Enabled', 'success');
+  } catch (e) {
+    console.log('Audio not available');
+  }
+}
+
+function initSounds() {
+  if (!audioCtx) return;
+  
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.3;
+  masterGain.connect(audioCtx.destination);
+  
+  const bufferSize = 2 * audioCtx.sampleRate;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+  
+  windNode = audioCtx.createBufferSource();
+  windNode.buffer = noiseBuffer;
+  windNode.loop = true;
+  
+  const windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'lowpass';
+  windFilter.frequency.value = 400;
+  
+  const windGain = audioCtx.createGain();
+  windGain.gain.value = 0.15;
+  
+  windNode.connect(windFilter);
+  windFilter.connect(windGain);
+  windGain.connect(masterGain);
+  windNode.start();
+  
+  drones.forEach((drone, i) => {
+    const propOsc = audioCtx.createOscillator();
+    propOsc.type = 'sawtooth';
+    propOsc.frequency.value = 80 + i * 10;
+    
+    const propGain = audioCtx.createGain();
+    propGain.gain.value = 0.08;
+    
+    const propFilter = audioCtx.createBiquadFilter();
+    propFilter.type = 'lowpass';
+    propFilter.frequency.value = 200;
+    
+    propOsc.connect(propFilter);
+    propFilter.connect(propGain);
+    propGain.connect(masterGain);
+    propOsc.start();
+    
+    propellerNodes.push({ osc: propOsc, gain: propGain });
+  });
+}
+
+function playSpraySound() {
+  if (!audioCtx || !audioEnabled) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.value = 800 + Math.random() * 400;
+  
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 2000;
+  
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playBugDetectedSound() {
+  if (!audioCtx || !audioEnabled) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.05);
+  
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playBugKilledSound() {
+  if (!audioCtx || !audioEnabled) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+  osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+  
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+  
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 500;
+  
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playReturnSound() {
+  if (!audioCtx || !audioEnabled) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(550, audioCtx.currentTime + 0.1);
+  osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2);
+  
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function createField() {
+  const groundGeo = new THREE.PlaneGeometry(400, 320, 32, 32);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x3a6e2a });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  
+  const pathMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+  for (let i = 0; i < 7; i++) {
+    const pathX = new THREE.Mesh(new THREE.PlaneGeometry(400, 2.5), pathMat);
+    pathX.rotation.x = -Math.PI / 2;
+    pathX.position.set(0, 0.03, (i - 3) * 45);
+    scene.add(pathX);
+    
+    if (i < 6) {
+      const pathZ = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 320), pathMat);
+      pathZ.rotation.x = -Math.PI / 2;
+      pathZ.position.set((i - 2.5) * 55, 0.03, 0);
+      scene.add(pathZ);
+    }
+  }
+  
+  crops = [];
+  const stemGeo = new THREE.CylinderGeometry(0.15, 0.2, 1.5, 6);
+  const stemMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3a });
+  
+  for (let row = 0; row < 24; row++) {
+    for (let col = 0; col < 40; col++) {
+      if ((row + 1) % 6 === 0 || (col + 1) % 7 === 0) continue;
+      
+      const plantGroup = new THREE.Group();
+      const isHealthy = Math.random() > 0.15;
+      const sizeVar = 0.7 + Math.random() * 0.6;
+      
+      const stem = new THREE.Mesh(stemGeo, stemMat);
+      stem.position.y = 0.75;
+      stem.castShadow = true;
+      plantGroup.add(stem);
+      
+      let leafColor;
+      if (isHealthy) {
+        leafColor = new THREE.Color().setHSL(0.28 + Math.random() * 0.08, 0.6 + Math.random() * 0.3, 0.3 + Math.random() * 0.2);
+      } else {
+        leafColor = new THREE.Color().setHSL(0.08 + Math.random() * 0.06, 0.5, 0.35);
+      }
+      
+      const leafGeo = new THREE.IcosahedronGeometry(0.8 * sizeVar, 1);
+      const leafMat = new THREE.MeshLambertMaterial({ color: leafColor });
+      const leaf = new THREE.Mesh(leafGeo, leafMat);
+      leaf.position.y = 1.6 + sizeVar * 0.3;
+      leaf.scale.set(1, 0.7, 1);
+      leaf.castShadow = true;
+      plantGroup.add(leaf);
+      
+      const px = (row - 11.5) * 16;
+      const pz = (col - 19.5) * 7.5;
+      plantGroup.position.set(px, 0, pz);
+      plantGroup.rotation.y = Math.random() * Math.PI * 2;
+      scene.add(plantGroup);
+      
+      crops.push({
+        mesh: plantGroup,
+        leafMesh: leaf,
+        healthy: isHealthy,
+        originalColor: leafColor.clone(),
+        needsSpray: !isHealthy,
+        sprayed: false,
+        recovering: false,
+        recoverProgress: 0,
+        scanned: false
+      });
+      
+      if (!isHealthy) {
+        const diseaseMat = new THREE.MeshBasicMaterial({ color: 0xff3366, transparent: true, opacity: 0.85 });
+        const diseaseMarker = new THREE.Mesh(new THREE.SphereGeometry(0.5), diseaseMat);
+        diseaseMarker.position.set(px, 4, pz);
+        diseaseMarker.visible = false;
+        scene.add(diseaseMarker);
+        diseaseSpots.push({ marker: diseaseMarker, crop: crops[crops.length - 1] });
+      }
+    }
+  }
+  
+  const boundaryMat = new THREE.MeshLambertMaterial({ color: 0x654321 });
+  const fences = [
+    { pos: [-200, 2, 0], size: [4, 4, 320] },
+    { pos: [200, 2, 0], size: [4, 4, 320] },
+    { pos: [0, 2, -160], size: [400, 4, 4] },
+    { pos: [0, 2, 160], size: [400, 4, 4] }
+  ];
+  fences.forEach(f => {
+    const fence = new THREE.Mesh(new THREE.BoxGeometry(...f.size), boundaryMat);
+    fence.position.set(...f.pos);
+    fence.castShadow = true;
+    scene.add(fence);
+  });
+}
+
+function createTreesAlongPaths() {
+  const treeTypes = [
+    { name: 'oak', trunkColor: 0x4a3728, leafColor: 0x2d5a1a, trunkHeight: 4, leafScale: 2.0 },
+    { name: 'pine', trunkColor: 0x5c4033, leafColor: 0x1a4a1a, trunkHeight: 6, leafScale: 2.5 },
+    { name: 'palm', trunkColor: 0x8b6914, leafColor: 0x3a6a2a, trunkHeight: 5, leafScale: 1.5 },
+    { name: 'bush', trunkColor: null, leafColor: 0x4a7a2a, trunkHeight: 0, leafScale: 0.8 }
+  ];
+  
+  const treePositions = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const pathZ = (i - 3) * 45;
+    for (let j = 0; j < 12; j++) {
+      treePositions.push({ x: -180 + j * 30, z: pathZ - 4 });
+      treePositions.push({ x: -180 + j * 30, z: pathZ + 4 });
+    }
+  }
+  
+  for (let i = 0; i < 6; i++) {
+    const pathX = (i - 2.5) * 55;
+    for (let j = 0; j < 10; j++) {
+      treePositions.push({ x: pathX - 4, z: -140 + j * 30 });
+      treePositions.push({ x: pathX + 4, z: -140 + j * 30 });
+    }
+  }
+  
+  const fencePositions = [
+    { xMin: -195, xMax: 195, z: -155 },
+    { xMin: -195, xMax: 195, z: 155 },
+    { x: -195, zMin: -155, zMax: 155 },
+    { x: 195, zMin: -155, zMax: 155 }
+  ];
+  
+  fencePositions.forEach(fence => {
+    if (fence.xMin !== undefined) {
+      for (let j = 0; j < 15; j++) {
+        treePositions.push({ x: fence.xMin + j * 28, z: fence.z + (fence.z > 0 ? 8 : -8) });
+      }
+    } else {
+      for (let j = 0; j < 12; j++) {
+        treePositions.push({ x: fence.x + (fence.x > 0 ? 8 : -8), z: fence.zMin + j * 28 });
+      }
+    }
+  });
+  
+  for (let i = 0; i < treePositions.length; i++) {
+    const pos = treePositions[i];
+    if (Math.random() > 0.7) continue;
+    
+    const type = treeTypes[Math.floor(Math.random() * treeTypes.length)];
+    const treeGroup = new THREE.Group();
+    
+    if (type.trunkHeight > 0) {
+      const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, type.trunkHeight, 8);
+      const trunkMat = new THREE.MeshLambertMaterial({ color: type.trunkColor });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = type.trunkHeight / 2;
+      trunk.castShadow = true;
+      treeGroup.add(trunk);
+    }
+    
+    if (type.name === 'oak') {
+      for (let i = 0; i < 3; i++) {
+        const leafGeo = new THREE.IcosahedronGeometry(type.leafScale * (0.8 + Math.random() * 0.4), 1);
+        const leafMat = new THREE.MeshLambertMaterial({ color: type.leafColor });
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.set((Math.random() - 0.5) * 2, type.trunkHeight + 1 + i * 1.2, (Math.random() - 0.5) * 2);
+        leaf.castShadow = true;
+        treeGroup.add(leaf);
+      }
+    } else if (type.name === 'pine') {
+      for (let i = 0; i < 4; i++) {
+        const leafGeo = new THREE.ConeGeometry(type.leafScale * (1.5 - i * 0.3), type.leafScale * (2 - i * 0.4), 8);
+        const leafMat = new THREE.MeshLambertMaterial({ color: type.leafColor });
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.y = type.trunkHeight + 0.5 + i * 1.5;
+        leaf.castShadow = true;
+        treeGroup.add(leaf);
+      }
+    } else if (type.name === 'palm') {
+      for (let i = 0; i < 6; i++) {
+        const leafGeo = new THREE.BoxGeometry(0.2, type.leafScale * 2, 0.8);
+        const leafMat = new THREE.MeshLambertMaterial({ color: type.leafColor });
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        const angle = (i * Math.PI) / 3;
+        leaf.position.set(Math.cos(angle) * 1.5, type.trunkHeight + 1, Math.sin(angle) * 1.5);
+        leaf.rotation.z = angle + 0.5;
+        leaf.rotation.x = 0.3;
+        treeGroup.add(leaf);
+      }
+    } else {
+      for (let i = 0; i < 5; i++) {
+        const leafGeo = new THREE.IcosahedronGeometry(type.leafScale * 0.6, 1);
+        const leafMat = new THREE.MeshLambertMaterial({ color: type.leafColor });
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.set((Math.random() - 0.5) * 1.5, 0.8 + Math.random() * 0.8, (Math.random() - 0.5) * 1.5);
+        leaf.castShadow = true;
+        treeGroup.add(leaf);
+      }
+    }
+    
+    treeGroup.position.set(pos.x, 0, pos.z);
+    treeGroup.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(treeGroup);
+  }
+}
+
+function createBugs() {
+  const bugTypes = [
+    { name: 'beetle', color: 0x4a3520, scale: 0.4, speed: 0.8 },
+    { name: 'locust', color: 0x6a8a30, scale: 0.5, speed: 1.5 },
+    { name: 'caterpillar', color: 0x8aaa50, scale: 0.6, speed: 0.3 },
+    { name: 'aphid', color: 0xaaaa30, scale: 0.2, speed: 0.2 }
+  ];
+  
+  for (let i = 0; i < 20; i++) {
+    const type = bugTypes[i % bugTypes.length];
+    const bugGroup = new THREE.Group();
+    
+    const bodyGeo = new THREE.SphereGeometry(type.scale * 0.5, 8, 6);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: type.color, emissive: type.color, emissiveIntensity: 0.2 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = type.scale * 0.3;
+    bugGroup.add(body);
+    
+    if (type.name === 'beetle') {
+      const headGeo = new THREE.SphereGeometry(type.scale * 0.3, 6, 6);
+      const head = new THREE.Mesh(headGeo, bodyMat);
+      head.position.set(0, type.scale * 0.3, type.scale * 0.4);
+      bugGroup.add(head);
+    } else if (type.name === 'locust') {
+      const legGeo = new THREE.BoxGeometry(0.1, type.scale * 0.8, 0.05);
+      for (let j = 0; j < 4; j++) {
+        const leg = new THREE.Mesh(legGeo, bodyMat);
+        leg.position.set((j % 2 === 0 ? -1 : 1) * type.scale * 0.3, type.scale * 0.2, (Math.floor(j / 2) - 0.5) * type.scale * 0.3);
+        leg.rotation.z = (j % 2 === 0 ? 1 : -1) * 0.5;
+        bugGroup.add(leg);
+      }
+    } else if (type.name === 'caterpillar') {
+      for (let j = 0; j < 4; j++) {
+        const segGeo = new THREE.SphereGeometry(type.scale * 0.25, 6, 6);
+        const seg = new THREE.Mesh(segGeo, bodyMat);
+        seg.position.z = j * type.scale * 0.3 - type.scale * 0.45;
+        seg.scale.y = 0.7;
+        bugGroup.add(seg);
+      }
+    }
+    
+    let spawnX, spawnZ;
+    let validPosition = false;
+    while (!validPosition) {
+      spawnX = (Math.random() - 0.5) * 350;
+      spawnZ = (Math.random() - 0.5) * 280;
+      const onPath = (Math.abs(spawnZ % 45) < 5) || (Math.abs(spawnX % 55) < 5);
+      if (!onPath) validPosition = true;
+    }
+    
+    bugGroup.position.set(spawnX, 0, spawnZ);
+    
+    const targetX = (Math.random() - 0.5) * 350;
+    const targetZ = (Math.random() - 0.5) * 280;
+    
+    bugGroup.userData = {
+      type: type.name,
+      health: 100,
+      alive: true,
+      speed: type.speed,
+      targetPosition: { x: targetX, z: targetZ },
+      lastSoundTime: 0
+    };
+    
+    scene.add(bugGroup);
+    bugs.push(bugGroup);
+  }
+}
+
+function updateBugMovement(delta) {
+  const currentTime = time;
+  
+  bugs.forEach((bug, idx) => {
+    const ud = bug.userData;
+    if (!ud.alive) return;
+    
+    const dx = ud.targetPosition.x - bug.position.x;
+    const dz = ud.targetPosition.z - bug.position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    
+    if (dist < 5) {
+      ud.targetPosition.x = (Math.random() - 0.5) * 350;
+      ud.targetPosition.z = (Math.random() - 0.5) * 280;
+    }
+    
+    drones.forEach(drone => {
+      const ddx = drone.position.x - bug.position.x;
+      const ddz = drone.position.z - bug.position.z;
+      if (Math.sqrt(ddx * ddx + ddz * ddz) < 15) {
+        ud.targetPosition.x = bug.position.x - ddx * 2;
+        ud.targetPosition.z = bug.position.z - ddz * 2;
+        ud.targetPosition.x = Math.max(-180, Math.min(180, ud.targetPosition.x));
+        ud.targetPosition.z = Math.max(-150, Math.min(150, ud.targetPosition.z));
+      }
+    });
+    
+    bug.position.x += (dx / dist) * ud.speed * delta * 3;
+    bug.position.z += (dz / dist) * ud.speed * delta * 3;
+    
+    bug.rotation.y = Math.atan2(dx, dz);
+    
+    if (ud.type === 'locust' && Math.random() < 0.02) {
+      bug.position.y = 0.5 + Math.random() * 1;
+    } else {
+      bug.position.y += (0 - bug.position.y) * 0.1;
+    }
+  });
+}
+
+function generatePatrolWaypoints(zoneIndex) {
+  const zones = [
+    { xMin: -180, xMax: -40 },
+    { xMin: -60, xMax: 60 },
+    { xMin: 40, xMax: 180 }
+  ];
+  const zone = zones[zoneIndex % 3];
+  const waypoints = [];
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 4; c++) {
+      const zigzag = r % 2 === 0 ? c : (3 - c);
+      waypoints.push({
+        x: zone.xMin + (zone.xMax - zone.xMin) * (zigzag / 3),
+        z: -140 + (280 * r / 4)
+      });
+    }
+  }
+  return waypoints;
+}
+
+function createDrones() {
+  drones = droneConfigs.map((config, index) => {
+    const droneGroup = new THREE.Group();
+    
+    const bodyGeo = new THREE.CylinderGeometry(1.5, 1.5, 2, 6);
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xf8f8f8, shininess: 100 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.castShadow = true;
+    droneGroup.add(body);
+    
+    const topGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.2, 6);
+    const topMat = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 150 });
+    const top = new THREE.Mesh(topGeo, topMat);
+    top.position.y = 1.1;
+    droneGroup.add(top);
+    
+    const rotors = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      const armGeo = new THREE.CylinderGeometry(0.15, 0.2, 0.8, 8);
+      const armMat = new THREE.MeshPhongMaterial({ color: 0xe0e0e0 });
+      const arm = new THREE.Mesh(armGeo, armMat);
+      arm.position.set(Math.cos(angle) * 3, 0.5, Math.sin(angle) * 3);
+      arm.castShadow = true;
+      droneGroup.add(arm);
+      
+      const motorGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 12);
+      const motorMat = new THREE.MeshPhongMaterial({ color: 0x444444, shininess: 100 });
+      const motor = new THREE.Mesh(motorGeo, motorMat);
+      motor.position.set(Math.cos(angle) * 3, 0.9, Math.sin(angle) * 3);
+      droneGroup.add(motor);
+      
+      const rotorGroup = new THREE.Group();
+      for (let j = 0; j < 2; j++) {
+        const bladeGeo = new THREE.BoxGeometry(3, 0.1, 0.3);
+        const bladeMat = new THREE.MeshPhongMaterial({ color: 0x333333, transparent: true, opacity: 0.8 });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        blade.rotation.y = j * Math.PI;
+        rotorGroup.add(blade);
+      }
+      rotorGroup.position.set(Math.cos(angle) * 3, 1.2, Math.sin(angle) * 3);
+      droneGroup.add(rotorGroup);
+      rotors.push(rotorGroup);
+    }
+    
+    const gimbalGroup = new THREE.Group();
+    const gimbalGeo = new THREE.SphereGeometry(0.6, 16, 16);
+    const gimbalMat = new THREE.MeshPhongMaterial({ color: 0x222222, shininess: 100 });
+    const gimbal = new THREE.Mesh(gimbalGeo, gimbalMat);
+    gimbalGroup.add(gimbal);
+    
+    const lensGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.5, 16);
+    const lensMat = new THREE.MeshPhongMaterial({ color: 0x111111, emissive: 0x004400, emissiveIntensity: 0.3 });
+    const lens = new THREE.Mesh(lensGeo, lensMat);
+    lens.position.set(0, -0.3, 0.5);
+    lens.rotation.x = Math.PI / 2;
+    gimbalGroup.add(lens);
+    gimbalGroup.position.set(0, -1.5, 0);
+    droneGroup.add(gimbalGroup);
+    
+    const tankGeo = new THREE.CylinderGeometry(1.2, 1.2, 1.8, 6);
+    const tankMat = new THREE.MeshPhongMaterial({ color: 0x4169E1, transparent: true, opacity: 0.9 });
+    const tank = new THREE.Mesh(tankGeo, tankMat);
+    tank.position.set(0, -0.8, -1.2);
+    droneGroup.add(tank);
+    
+    const levelGeo = new THREE.CylinderGeometry(1.0, 1.0, 1.6, 6);
+    const levelMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.6 });
+    const levelIndicator = new THREE.Mesh(levelGeo, levelMat);
+    levelIndicator.position.set(0, -0.8, -1.2);
+    levelIndicator.scale.y = config.pesticide / 200;
+    droneGroup.add(levelIndicator);
+    
+    const scanConeGeo = new THREE.ConeGeometry(6, 10, 16, 1, true);
+    const scanConeMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+    const scanCone = new THREE.Mesh(scanConeGeo, scanConeMat);
+    scanCone.rotation.x = Math.PI;
+    scanCone.position.y = -7;
+    droneGroup.add(scanCone);
+    
+    const mistGeo = new THREE.RingGeometry(1, 8, 24);
+    const mistMat = new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0, side: THREE.DoubleSide });
+    const mistRing = new THREE.Mesh(mistGeo, mistMat);
+    mistRing.rotation.x = -Math.PI / 2;
+    mistRing.position.y = 0.5;
+    scene.add(mistRing);
+    
+    droneGroup.position.set(config.position.x, 14, config.position.z);
+    
+    const waypoints = generatePatrolWaypoints(index);
+    droneGroup.userData = {
+      id: config.id,
+      battery: config.battery,
+      pesticide: config.pesticide,
+      status: 'active',
+      rotors,
+      scanCone,
+      mistRing,
+      levelIndicator,
+      waypoints,
+      currentWaypoint: 0,
+      velocity: { x: 0, z: 0 },
+      patrolActive: true,
+      sprayActive: false,
+      returning: false,
+      targetPosition: null,
+      targetingBug: null
+    };
+    
+    scene.add(droneGroup);
+    return droneGroup;
+  });
+}
+
+function createChargingStation() {
+  const station = new THREE.Group();
+  
+  const baseGeo = new THREE.CylinderGeometry(12, 12, 1.5, 20);
+  const baseMat = new THREE.MeshPhongMaterial({ color: 0x555555, shininess: 100 });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.receiveShadow = true;
+  station.add(base);
+  
+  const towerGeo = new THREE.CylinderGeometry(1.5, 1.5, 12, 16);
+  const towerMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
+  const tower = new THREE.Mesh(towerGeo, towerMat);
+  tower.position.y = 7;
+  tower.castShadow = true;
+  station.add(tower);
+  
+  for (let i = 0; i < 8; i++) {
+    const panelGeo = new THREE.BoxGeometry(6, 0.3, 8);
+    const panelMat = new THREE.MeshPhongMaterial({ color: 0x1a1a4a, shininess: 200 });
+    const panel = new THREE.Mesh(panelGeo, panelMat);
+    const angle = (i * Math.PI) / 4;
+    panel.position.set(Math.cos(angle) * 9, 12 + Math.sin(i * 0.3) * 1, Math.sin(angle) * 9);
+    panel.rotation.y = angle;
+    panel.rotation.x = -0.2;
+    panel.castShadow = true;
+    station.add(panel);
+  }
+  
+  for (let i = 0; i < 6; i++) {
+    const padGeo = new THREE.CylinderGeometry(4, 4, 0.8, 16);
+    const padMat = new THREE.MeshPhongMaterial({ color: 0x00ff88, emissive: 0x002211, emissiveIntensity: 0.5 });
+    const pad = new THREE.Mesh(padGeo, padMat);
+    const angle = (i * Math.PI) / 3;
+    pad.position.set(Math.cos(angle) * 8, 1.5, Math.sin(angle) * 8);
+    station.add(pad);
+  }
+  
+  for (let i = 0; i < 3; i++) {
+    const tankGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 12);
+    const tankMat = new THREE.MeshPhongMaterial({ color: 0x4169E1, transparent: true, opacity: 0.8 });
+    const tank = new THREE.Mesh(tankGeo, tankMat);
+    tank.position.set(Math.cos(i * Math.PI * 2 / 3) * 6, 3, Math.sin(i * Math.PI * 2 / 3) * 6);
+    station.add(tank);
+  }
+  
+  station.position.set(45, 0, -35);
+  scene.add(station);
+}
+
+function generateDroneCards() {
+  const container = document.getElementById('drone-fleet');
+  container.innerHTML = '';
+  
+  droneConfigs.forEach(config => {
+    const card = document.createElement('div');
+    card.className = 'drone-card';
+    card.id = `card-${config.id}`;
+    card.onclick = () => selectDrone(config.id);
+    card.innerHTML = `
+      <div class="drone-header">
+        <div class="drone-name">${config.id}</div>
+        <div class="drone-status active" id="status-${config.id}">ACTIVE</div>
+      </div>
+      <div class="drone-stats">
+        <div class="stat-item">
+          <span>Battery</span>
+          <span class="stat-value" id="batt-${config.id}">${config.battery}%</span>
+        </div>
+        <div class="stat-item">
+          <span>Pesticide</span>
+          <span class="stat-value" id="pest-${config.id}">${config.pesticide}L</span>
+        </div>
+      </div>
+      <div class="battery-indicator">
+        <div class="battery-fill" id="fill-${config.id}" style="width:${config.battery}%; background:var(--success)"></div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectDrone(droneId) {
+  if (selectedDroneId === droneId) {
+    selectedDroneId = null;
+    cameraMode = 'overview';
+    showToast('Returned to Overview Camera', 'info');
+  } else {
+    selectedDroneId = droneId;
+    cameraMode = 'drone';
+    showToast(`Switched to ${droneId} POV`, 'success');
+  }
+  document.querySelectorAll('.cam-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+function updateDronePositions(delta) {
+  const currentTime = time;
+  let activeSpray = 0;
+  let totalPesticide = 0;
+  
+  drones.forEach((drone, index) => {
+    const ud = drone.userData;
+    
+    ud.rotors.forEach(rotor => { rotor.rotation.y += delta * 25; });
+    
+    if (emergencyActive) {
+      const basePos = { x: 45, z: -35 };
+      drone.position.x += (basePos.x - drone.position.x) * 0.02;
+      drone.position.z += (basePos.z - drone.position.z) * 0.02;
+      drone.position.y += (12 - drone.position.y) * 0.02;
+      return;
+    }
+    
+    if (ud.patrolActive) {
+      const wp = ud.waypoints[ud.currentWaypoint];
+      const dx = wp.x - drone.position.x;
+      const dz = wp.z - drone.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      
+      if (dist < 8) {
+        ud.currentWaypoint = (ud.currentWaypoint + 1) % ud.waypoints.length;
+      }
+      
+      ud.velocity.x += dx * 0.002;
+      ud.velocity.z += dz * 0.002;
+      ud.velocity.x *= 0.96;
+      ud.velocity.z *= 0.96;
+      
+      drone.position.x += ud.velocity.x + Math.sin(currentTime * 0.7 + index * 2.1) * 0.02;
+      drone.position.z += ud.velocity.z + Math.cos(currentTime * 0.5 + index * 1.7) * 0.02;
+      
+      const targetAlt = 14 + Math.sin(currentTime * 1.5 + index * 1.2) * 1.5;
+      drone.position.y += (targetAlt - drone.position.y) * 0.04;
+      
+      const speed = Math.sqrt(ud.velocity.x ** 2 + ud.velocity.z ** 2);
+      const bankAngle = Math.min(speed * 2.5, 0.25);
+      
+      if (speed > 0.01) {
+        const targetYaw = Math.atan2(ud.velocity.x, ud.velocity.z);
+        let diff = targetYaw - drone.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        drone.rotation.y += diff * 0.06;
+      }
+      
+      drone.rotation.x += (-Math.cos(drone.rotation.y) * bankAngle - drone.rotation.x) * 0.08;
+      drone.rotation.z += (Math.sin(drone.rotation.y) * bankAngle - drone.rotation.z) * 0.08;
+    } else if (ud.returning) {
+      const target = ud.targetPosition;
+      const dx = target.x - drone.position.x;
+      const dz = target.z - drone.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      
+      if (dist < 5) {
+        ud.returning = false;
+        ud.status = 'docked';
+        return;
+      }
+      
+      ud.velocity.x += dx * 0.004;
+      ud.velocity.z += dz * 0.004;
+      ud.velocity.x *= 0.92;
+      ud.velocity.z *= 0.92;
+      
+      drone.position.x += ud.velocity.x;
+      drone.position.z += ud.velocity.z;
+      drone.position.y += (12 - drone.position.y) * 0.03;
+      
+      const speed = Math.sqrt(ud.velocity.x ** 2 + ud.velocity.z ** 2);
+      if (speed > 0.01) {
+        const targetYaw = Math.atan2(ud.velocity.x, ud.velocity.z);
+        let diff = targetYaw - drone.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        drone.rotation.y += diff * 0.08;
+      }
+      
+      drone.rotation.x *= 0.95;
+      drone.rotation.z *= 0.95;
+    }
+    
+    ud.scanCone.rotation.y += delta * 2;
+    ud.scanCone.material.opacity = 0.06 + Math.sin(currentTime * 3 + index) * 0.03;
+    
+    const scannedCrops = crops.filter(c => {
+      if (c.scanned) return false;
+      const dx = c.mesh.position.x - drone.position.x;
+      const dz = c.mesh.position.z - drone.position.z;
+      return (dx * dx + dz * dz) < 100;
+    });
+    
+    if (scannedCrops.length > 0) {
+      scannedCrops.forEach(c => {
+        c.scanned = true;
+        totalScanned++;
+      });
+      fieldCoverage = Math.min(95, fieldCoverage + scannedCrops.length * 0.02);
+    }
+    
+    const bugsInRange = bugs.filter(b => {
+      if (!b.userData.alive) return false;
+      const dx = b.position.x - drone.position.x;
+      const dz = b.position.z - drone.position.z;
+      return (dx * dx + dz * dz) < 64;
+    });
+    
+    if (bugsInRange.length > 0 && isAutoScan) {
+      bugsInRange.forEach(b => {
+        if (b.userData.targetedBy) return;
+        b.userData.targetedBy = ud.id;
+        playBugDetectedSound();
+        showToast(`🐛 Bug detected by ${ud.id}!`, 'warning');
+        b.visible = true;
+      });
+    }
+    
+    ud.mistRing.position.x = drone.position.x;
+    ud.mistRing.position.z = drone.position.z;
+    
+    const nearbyDiseased = crops.filter(c => {
+      if (!c.needsSpray || c.sprayed) return false;
+      const dx = c.mesh.position.x - drone.position.x;
+      const dz = c.mesh.position.z - drone.position.z;
+      return (dx * dx + dz * dz) < 144;
+    });
+    
+    if (isPrecisionSpray && nearbyDiseased.length > 0 && ud.pesticide > 5) {
+      ud.sprayActive = true;
+      activeSpray++;
+      ud.pesticide = Math.max(0, ud.pesticide - 0.08);
+      ud.mistRing.material.opacity += (0.15 - ud.mistRing.material.opacity) * 0.1;
+      ud.mistRing.rotation.z += 0.01;
+      
+      nearbyDiseased.forEach(c => {
+        c.sprayed = true;
+        c.needsSpray = false;
+        c.recovering = true;
+        c.recoverProgress = 0;
+        totalScanned++;
+      });
+      
+      document.getElementById('spray-viz').classList.add('active');
+    } else {
+      ud.sprayActive = false;
+      ud.mistRing.material.opacity *= 0.92;
+      document.getElementById('spray-viz').classList.remove('active');
+    }
+    
+    const nearbyBugs = bugs.filter(b => {
+      if (!b.userData.alive) return false;
+      const dx = b.position.x - drone.position.x;
+      const dz = b.position.z - drone.position.z;
+      return (dx * dx + dz * dz) < 144;
+    });
+    
+    if (!ud.targetingBug && nearbyBugs.length > 0 && isAutoScan) {
+      ud.targetingBug = nearbyBugs[0];
+      ud.targetingBug.userData.targetedBy = ud.id;
+      playBugDetectedSound();
+      showToast(`🐛 Bug detected by ${ud.id}!`, 'warning');
+    }
+    
+    if (ud.targetingBug && ud.targetingBug.userData.alive) {
+      const bugPos = ud.targetingBug.position;
+      const dx = bugPos.x - drone.position.x;
+      const dz = bugPos.z - drone.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      
+      if (dist > 8) {
+        drone.position.x += dx * 0.015;
+        drone.position.z += dz * 0.015;
+        drone.position.y += (8 - drone.position.y) * 0.02;
+      } else if (ud.pesticide > 5) {
+        ud.sprayActive = true;
+        activeSpray++;
+        ud.pesticide = Math.max(0, ud.pesticide - 0.15);
+        ud.mistRing.material.opacity += (0.2 - ud.mistRing.material.opacity) * 0.1;
+        ud.mistRing.rotation.z += 0.02;
+        
+        playSpraySound();
+        
+        ud.targetingBug.userData.health -= delta * 35;
+        
+        if (ud.targetingBug.userData.health <= 0) {
+          ud.targetingBug.userData.alive = false;
+          ud.targetingBug.visible = false;
+          bugsKilled++;
+          bugsActive = bugs.filter(b => b.userData.alive).length;
+          playBugKilledSound();
+          showToast(`💀 Bug eliminated by ${ud.id}!`, 'success');
+          
+          setTimeout(() => respawnBug(), 8000);
+        }
+        
+        document.getElementById('spray-viz').classList.add('active');
+      }
+    } else if (ud.targetingBug && !ud.targetingBug.userData.alive) {
+      ud.targetingBug = null;
+    }
+    
+    ud.battery = Math.max(20, ud.battery - delta * 0.3);
+    totalPesticide += ud.pesticide;
+    
+    document.getElementById(`batt-${ud.id}`).textContent = Math.floor(ud.battery) + '%';
+    document.getElementById(`pest-${ud.id}`).textContent = Math.floor(ud.pesticide) + 'L';
+    const fill = document.getElementById(`fill-${ud.id}`);
+    fill.style.width = ud.battery + '%';
+    fill.style.background = ud.battery > 60 ? 'var(--success)' : ud.battery > 30 ? 'var(--warning)' : 'var(--danger)';
+    
+    const statusEl = document.getElementById(`status-${ud.id}`);
+    if (ud.status === 'docked') {
+      statusEl.textContent = 'DOCKED';
+      statusEl.className = 'drone-status charging';
+    } else if (ud.returning) {
+      statusEl.textContent = 'RETURNING';
+      statusEl.className = 'drone-status charging';
+    } else if (ud.battery < 30) {
+      statusEl.textContent = 'LOW BAT';
+      statusEl.className = 'drone-status maintenance';
+    } else {
+      statusEl.textContent = 'ACTIVE';
+      statusEl.className = 'drone-status active';
+    }
+  });
+  
+  sprayingDrones = activeSpray;
+  document.getElementById('spray-count').textContent = sprayingDrones;
+  document.getElementById('scanned-total').textContent = totalScanned.toLocaleString();
+  document.getElementById('hud-pesticide').textContent = Math.floor(totalPesticide) + 'L';
+  
+  fieldCoverage = Math.min(95, fieldCoverage + delta * 0.5);
+  diseaseDetection = totalScanned > 0 ? Math.min(98, (totalScanned / (crops.length * 0.15)) * 100) : 0;
+  sprayEfficiency = sprayingDrones > 0 ? Math.min(99, 80 + sprayingDrones * 5) : 80;
+  
+  document.getElementById('coverage-percent').textContent = Math.floor(fieldCoverage) + '%';
+  document.getElementById('coverage-bar').style.width = fieldCoverage + '%';
+  document.getElementById('disease-percent').textContent = Math.floor(diseaseDetection) + '%';
+  document.getElementById('disease-bar').style.width = diseaseDetection + '%';
+  document.getElementById('efficiency-percent').textContent = Math.floor(sprayEfficiency) + '%';
+  document.getElementById('efficiency-bar').style.width = sprayEfficiency + '%';
+  document.getElementById('hud-efficiency').textContent = Math.floor(sprayEfficiency) + '%';
+  document.getElementById('hud-coverage').textContent = Math.floor(fieldCoverage * 1.7) + ' ha';
+  
+  const bugPercent = bugsKilled > 0 ? Math.min(100, (bugsKilled / 15) * 100) : 0;
+  document.getElementById('bug-percent').textContent = Math.floor(bugPercent) + '%';
+  document.getElementById('bug-bar').style.width = bugPercent + '%';
+}
+
+function updateCropRecovery() {
+  const healthyColor = new THREE.Color().setHSL(0.32, 0.75, 0.4);
+  crops.forEach(crop => {
+    if (crop.recovering && crop.leafMesh) {
+      crop.recoverProgress = Math.min(1, crop.recoverProgress + 0.008);
+      crop.leafMesh.material.color.lerp(healthyColor, 0.01);
+      if (crop.recoverProgress >= 1) {
+        crop.recovering = false;
+        crop.healthy = true;
+      }
+    }
+  });
+}
+
+function updateCamera() {
+  switch (cameraMode) {
+    case 'overview':
+      camera.position.lerp(new THREE.Vector3(0, 55, 80), 0.02);
+      camera.lookAt(0, 0, 0);
+      break;
+    case 'follow':
+      if (drones[0]) {
+        const target = drones[0].position.clone();
+        camera.position.lerp(target.clone().add(new THREE.Vector3(20, 25, 20)), 0.03);
+        camera.lookAt(target);
+      }
+      break;
+    case 'topdown':
+      camera.position.lerp(new THREE.Vector3(0, 200, 0), 0.02);
+      camera.lookAt(0, 0, 0);
+      break;
+    case 'cinematic':
+      const angle = time * 0.1;
+      camera.position.lerp(new THREE.Vector3(Math.cos(angle) * 150, 60 + Math.sin(time * 0.2) * 20, Math.sin(angle) * 150), 0.01);
+      camera.lookAt(0, 0, 0);
+      break;
+    case 'side':
+      camera.position.lerp(new THREE.Vector3(-200, 40, 0), 0.02);
+      camera.lookAt(0, 10, 0);
+      break;
+    case 'drone':
+      const selectedDrone = drones.find(d => d.userData.id === selectedDroneId);
+      if (selectedDrone) {
+        const target = selectedDrone.position.clone();
+        const offset = new THREE.Vector3(
+          Math.sin(selectedDrone.rotation.y) * 15,
+          8,
+          Math.cos(selectedDrone.rotation.y) * 15
+        );
+        camera.position.lerp(target.clone().add(offset), 0.05);
+        camera.lookAt(target);
+      }
+      break;
+  }
+}
+
+function updateHUD() {
+  const temp = 24 + Math.sin(time * 0.1) * 5;
+  const humidity = 65 + Math.sin(time * 0.15) * 10;
+  const wind = 8 + Math.sin(time * 0.2) * 4;
+  
+  document.getElementById('hud-temp').textContent = Math.floor(temp) + '&deg;C';
+  document.getElementById('hud-humidity').textContent = Math.floor(humidity) + '%';
+  document.getElementById('hud-wind').textContent = Math.floor(wind) + 'km/h';
+  document.getElementById('wind-display').textContent = `Wind: ${Math.floor(wind)}km/h`;
+  
+  bugsActive = bugs.filter(b => b.userData.alive).length;
+  document.getElementById('bugs-active').textContent = bugsActive;
+  document.getElementById('bugs-killed').textContent = bugsKilled;
+  document.getElementById('hud-bugs-killed').textContent = bugsKilled;
+  
+  windSpeed = wind;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = 0.016;
+  time += delta;
+  
+  updateBugMovement(delta);
+  updateDronePositions(delta);
+  updateCropRecovery();
+  updateCamera();
+  updateHUD();
+  
+  if (isNightMode) {
+    renderer.setClearColor(0x050510);
+    scene.fog = new THREE.Fog(0x050510, 50, 200);
+  } else {
+    renderer.setClearColor(0x0f1f0f);
+    scene.fog = new THREE.Fog(0x0f1f0f, 80, 400);
+  }
+  
+  renderer.render(scene, camera);
+}
+
+function respawnBug() {
+  const bugTypes = [
+    { name: 'beetle', color: 0x4a3520, scale: 0.4, speed: 0.8 },
+    { name: 'locust', color: 0x6a8a30, scale: 0.5, speed: 1.5 },
+    { name: 'caterpillar', color: 0x8aaa50, scale: 0.6, speed: 0.3 },
+    { name: 'aphid', color: 0xaaaa30, scale: 0.2, speed: 0.2 }
+  ];
+  
+  const type = bugTypes[Math.floor(Math.random() * bugTypes.length)];
+  const bugGroup = new THREE.Group();
+  
+  const bodyGeo = new THREE.SphereGeometry(type.scale * 0.5, 8, 6);
+  const bodyMat = new THREE.MeshLambertMaterial({ color: type.color });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = type.scale * 0.3;
+  bugGroup.add(body);
+  
+  let spawnX, spawnZ;
+  let validPosition = false;
+  while (!validPosition) {
+    spawnX = (Math.random() - 0.5) * 350;
+    spawnZ = (Math.random() - 0.5) * 280;
+    const onPath = (Math.abs(spawnZ % 45) < 5) || (Math.abs(spawnX % 55) < 5);
+    if (!onPath) validPosition = true;
+  }
+  
+  bugGroup.position.set(spawnX, 0, spawnZ);
+  bugGroup.userData = {
+    type: type.name,
+    health: 100,
+    alive: true,
+    speed: type.speed,
+    targetPosition: { x: (Math.random() - 0.5) * 350, z: (Math.random() - 0.5) * 280 }
+  };
+  
+  scene.add(bugGroup);
+  bugs.push(bugGroup);
+  bugsActive = bugs.filter(b => b.userData.alive).length;
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.setCameraMode = (mode) => {
+  cameraMode = mode;
+  document.querySelectorAll('.cam-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`cam-${mode}`).classList.add('active');
+  showToast(`${mode.charAt(0).toUpperCase() + mode.slice(1)} Camera`, 'info');
+};
+
+window.toggleFormation = () => {
+  isFormationMode = !isFormationMode;
+  document.getElementById('auto-formation').classList.toggle('active', isFormationMode);
+  drones.forEach(d => {
+    d.userData.patrolActive = isFormationMode;
+    d.userData.returning = false;
+    d.userData.status = 'active';
+  });
+  showToast(isFormationMode ? 'Auto Formation Enabled' : 'Auto Formation Disabled', 'success');
+};
+
+window.togglePrecisionSpray = () => {
+  isPrecisionSpray = !isPrecisionSpray;
+  document.getElementById('precision-spray').classList.toggle('active', isPrecisionSpray);
+  showToast(isPrecisionSpray ? 'Precision Spray Enabled' : 'Precision Spray Disabled', 'success');
+};
+
+window.toggleAutoScan = () => {
+  isAutoScan = !isAutoScan;
+  document.getElementById('auto-scan-btn').classList.toggle('active', isAutoScan);
+  showToast(isAutoScan ? 'Auto Scan Enabled' : 'Auto Scan Disabled', 'info');
+};
+
+window.returnAllToBase = () => {
+  const basePos = { x: 45, z: -35 };
+  drones.forEach((d, i) => {
+    d.userData.patrolActive = false;
+    d.userData.returning = true;
+    d.userData.targetingBug = null;
+    d.userData.targetPosition = basePos;
+  });
+  playReturnSound();
+  showToast('All Drones Returning to Base', 'warning');
+};
+
+window.emergencyStop = () => {
+  emergencyActive = !emergencyActive;
+  document.getElementById('emergency-stop').classList.toggle('active', emergencyActive);
+  showToast(emergencyActive ? 'EMERGENCY STOP ACTIVATED' : 'Emergency Stop Deactivated', 'danger');
+};
+
+window.toggleNightMode = () => {
+  isNightMode = !isNightMode;
+  document.getElementById('night-mode').classList.toggle('active', isNightMode);
+  showToast(isNightMode ? 'Night Mode Enabled' : 'Day Mode Enabled', 'info');
+};
+
+window.showToast = (message, type = 'success') => {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+};
+
+init();
+</script>
+</body>
+</html>
+
+
