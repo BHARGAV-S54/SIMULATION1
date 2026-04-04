@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "postinstall": "sh -c 'chmod +x node_modules/.bin/vite'"
+    "postinstall": "sh -c 'chmod +x ../node_modules/.bin/vite'"
   },
   "dependencies": {
     "three": "^0.168.0"
