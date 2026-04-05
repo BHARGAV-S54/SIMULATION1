@@ -1343,34 +1343,32 @@ function updateDronePositions(delta) {
       const dz = wp.z - drone.position.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
       
-      if (dist < 8) {
+      if (dist < 5) {
         ud.currentWaypoint = (ud.currentWaypoint + 1) % ud.waypoints.length;
       }
       
-      ud.velocity.x += dx * 0.002;
-      ud.velocity.z += dz * 0.002;
-      ud.velocity.x *= 0.96;
-      ud.velocity.z *= 0.96;
+      const moveSpeed = 12;
+      if (dist > 0) {
+        drone.position.x += (dx / dist) * moveSpeed * delta * 60;
+        drone.position.z += (dz / dist) * moveSpeed * delta * 60;
+      }
       
-      drone.position.x += ud.velocity.x + Math.sin(currentTime * 0.7 + index * 2.1) * 0.02;
-      drone.position.z += ud.velocity.z + Math.cos(currentTime * 0.5 + index * 1.7) * 0.02;
+      drone.position.x += Math.sin(currentTime * 0.5 + index * 1.5) * 0.3;
+      drone.position.z += Math.cos(currentTime * 0.3 + index * 1.2) * 0.3;
       
-      const targetAlt = 14 + Math.sin(currentTime * 1.5 + index * 1.2) * 1.5;
-      drone.position.y += (targetAlt - drone.position.y) * 0.04;
+      const targetAlt = 14 + Math.sin(currentTime * 0.8 + index) * 2;
+      drone.position.y += (targetAlt - drone.position.y) * 0.05;
       
-      const speed = Math.sqrt(ud.velocity.x ** 2 + ud.velocity.z ** 2);
-      const bankAngle = Math.min(speed * 2.5, 0.25);
-      
-      if (speed > 0.01) {
-        const targetYaw = Math.atan2(ud.velocity.x, ud.velocity.z);
+      if (dist > 5) {
+        const targetYaw = Math.atan2(dx, dz);
         let diff = targetYaw - drone.rotation.y;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        drone.rotation.y += diff * 0.06;
+        drone.rotation.y += diff * 0.08;
       }
       
-      drone.rotation.x += (-Math.cos(drone.rotation.y) * bankAngle - drone.rotation.x) * 0.08;
-      drone.rotation.z += (Math.sin(drone.rotation.y) * bankAngle - drone.rotation.z) * 0.08;
+      drone.rotation.x *= 0.95;
+      drone.rotation.z *= 0.95;
     } else if (ud.returning) {
       const target = ud.targetPosition;
       const dx = target.x - drone.position.x;
@@ -1383,26 +1381,16 @@ function updateDronePositions(delta) {
         return;
       }
       
-      ud.velocity.x += dx * 0.004;
-      ud.velocity.z += dz * 0.004;
-      ud.velocity.x *= 0.92;
-      ud.velocity.z *= 0.92;
+      const returnSpeed = 15;
+      drone.position.x += (dx / dist) * returnSpeed * delta * 60;
+      drone.position.z += (dz / dist) * returnSpeed * delta * 60;
+      drone.position.y += (12 - drone.position.y) * 0.05;
       
-      drone.position.x += ud.velocity.x;
-      drone.position.z += ud.velocity.z;
-      drone.position.y += (12 - drone.position.y) * 0.03;
-      
-      const speed = Math.sqrt(ud.velocity.x ** 2 + ud.velocity.z ** 2);
-      if (speed > 0.01) {
-        const targetYaw = Math.atan2(ud.velocity.x, ud.velocity.z);
-        let diff = targetYaw - drone.rotation.y;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        drone.rotation.y += diff * 0.08;
-      }
-      
-      drone.rotation.x *= 0.95;
-      drone.rotation.z *= 0.95;
+      const targetYaw = Math.atan2(dx, dz);
+      let diff = targetYaw - drone.rotation.y;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      drone.rotation.y += diff * 0.08;
     }
     
     ud.scanCone.rotation.y += delta * 2;
