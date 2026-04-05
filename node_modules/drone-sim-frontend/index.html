@@ -566,9 +566,9 @@ let time = 0;
 let emergencyActive = false;
 
 const droneConfigs = [
-  { id: 'ALPHA-01', position: { x: -20, z: -15 }, battery: 87, pesticide: 145 },
-  { id: 'BETA-02', position: { x: 0, z: -15 }, battery: 92, pesticide: 132 },
-  { id: 'GAMMA-03', position: { x: 20, z: -15 }, battery: 78, pesticide: 89 }
+  { id: 'ALPHA-01', position: { x: -120, z: -120 }, battery: 87, pesticide: 145 },
+  { id: 'BETA-02', position: { x: 40, z: -120 }, battery: 92, pesticide: 132 },
+  { id: 'GAMMA-03', position: { x: 200, z: -120 }, battery: 78, pesticide: 89 }
 ];
 
 let bugs = [];
@@ -1081,19 +1081,27 @@ function updateBugMovement(delta) {
 }
 
 function generatePatrolWaypoints(zoneIndex) {
-  const zones = [
-    { xMin: -180, xMax: -40 },
-    { xMin: -60, xMax: 60 },
-    { xMin: 40, xMax: 180 }
-  ];
-  const zone = zones[zoneIndex % 3];
+  const fieldWidth = 400;
+  const fieldDepth = 320;
+  const numDrones = 3;
+  const zoneWidth = fieldWidth / numDrones;
+  const xStart = -fieldWidth / 2 + 20;
+  
+  const zone = {
+    xMin: xStart + zoneIndex * zoneWidth,
+    xMax: xStart + (zoneIndex + 1) * zoneWidth - 20
+  };
+  
   const waypoints = [];
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 4; c++) {
-      const zigzag = r % 2 === 0 ? c : (3 - c);
+  const rows = 10;
+  const cols = 4;
+  
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const zigzag = r % 2 === 0 ? c : (cols - 1 - c);
       waypoints.push({
-        x: zone.xMin + (zone.xMax - zone.xMin) * (zigzag / 3),
-        z: -140 + (280 * r / 4)
+        x: zone.xMin + (zone.xMax - zone.xMin) * (zigzag / (cols - 1)),
+        z: -fieldDepth / 2 + 20 + (fieldDepth - 40) * (r / (rows - 1))
       });
     }
   }
