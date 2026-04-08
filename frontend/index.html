@@ -94,6 +94,13 @@ body::before{
 #left-panel{
   position:fixed;left:20px;top:80px;width:280px;
   display:flex;flex-direction:column;gap:12px;pointer-events:all;z-index:15;
+  transition:left 0.3s ease;
+}
+
+#right-panel{
+  position:fixed;right:20px;top:80px;width:300px;
+  display:flex;flex-direction:column;gap:12px;pointer-events:all;z-index:15;
+  transition:right 0.3s ease;
 }
 
 .panel-section{
@@ -336,15 +343,97 @@ body::before{
 }
 
 @keyframes sprayPulse{0%,100%{opacity:0.5;}50%{opacity:0.8;}}
+
+.mobile-menu-btn{display:none;position:flex;flex-direction:column;gap:4px;padding:8px;background:none;border:none;cursor:pointer;}
+.mobile-menu-btn span{display:block;width:22px;height:2px;background:var(--primary);border-radius:2px;transition:all 0.3s;}
+
+@media (max-width:1024px){
+  .brand{font-size:1.2rem;}
+  .brand .brand-text{display:none;}
+  .fleet-status{display:none;}
+  .status-chips{display:none;}
+  #left-panel{width:260px;left:-280px;}
+  #right-panel{width:280px;right:-300px;}
+  #bottom-hud{width:95%;}
+  .hud-grid{grid-template-columns:repeat(4,1fr);}
+  .control-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+@media (max-width:768px){
+  #topbar{height:52px;padding:0 16px;justify-content:flex-start;gap:12px;}
+  .brand-icon{width:36px;height:36px;font-size:18px;border-radius:8px;}
+  .mobile-menu-btn{display:flex;}
+  .brand-text{display:none;}
+  #left-panel,#right-panel{top:52px;height:calc(100vh - 52px - 70px);overflow-y:auto;border-radius:0;z-index:30;}
+  #left-panel{left:-280px;}
+  #right-panel{right:-300px;}
+  #left-panel.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,0.5);}
+  #right-panel.open{right:0;box-shadow:-4px 0 20px rgba(0,0,0,0.5);}
+  .panel-section{padding:12px;border-radius:12px;}
+  .section-title{font-size:0.7rem;margin-bottom:10px;}
+  .drone-card{padding:10px;border-radius:10px;}
+  .drone-name{font-size:0.8rem;}
+  .drone-stats{grid-template-columns:1fr;font-size:0.65rem;}
+  .control-btn{padding:10px;border-radius:10px;}
+  .control-btn .btn-icon{font-size:1rem;}
+  #bottom-hud{bottom:8px;padding:10px 12px;border-radius:16px;}
+  .hud-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .hud-item{padding:6px 8px;border-radius:10px;}
+  .hud-icon{font-size:1rem;}
+  .hud-label{font-size:0.5rem;}
+  .hud-value{font-size:0.75rem;}
+  #camera-bar{top:60px;padding:6px 10px;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:95%;margin:0 auto;border-radius:14px;}
+  .cam-btn{padding:5px 10px;font-size:0.55rem;border-radius:10px;white-space:nowrap;}
+  #toast-container{top:70px;right:10px;}
+  .toast{font-size:0.7rem;max-width:220px;padding:10px 12px;}
+  .fab-container{position:fixed;bottom:90px;right:16px;z-index:25;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+  .fab-main{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 20px rgba(0,255,136,0.4);transition:transform 0.3s,box-shadow 0.3s;}
+  .fab-main:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,255,136,0.6);}
+  .fab-main.active{transform:rotate(135deg);background:linear-gradient(135deg,var(--danger),#cc2255);}
+  .fab-menu{display:none;flex-direction:column;gap:10px;align-items:flex-end;}
+  .fab-menu.open{display:flex;}
+  .fab-item{width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--glass-bg);border:2px solid var(--glass-border);box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:transform 0.2s;}
+  .fab-item:hover{transform:scale(1.15);background:rgba(0,255,136,0.2);}
+  .fab-item.danger{background:rgba(255,51,102,0.2);border-color:var(--danger);color:var(--danger);}
+  .fab-item.warning{background:rgba(255,170,0,0.2);border-color:var(--warning);color:var(--warning);}
+  .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:29;opacity:0;visibility:hidden;transition:opacity 0.3s,visibility 0.3s;}
+  .panel-overlay.show{opacity:1;visibility:visible;}
+  .coordination-display{min-width:280px;padding:16px;border-radius:16px;}
+}
+
+@media (max-width:480px){
+  #topbar{padding:0 12px;}
+  .brand-icon{width:32px;height:32px;font-size:14px;}
+  #left-panel,#right-panel{width:100%;left:-100%;right:-100%;}
+  #left-panel.open,#right-panel.open{width:100%;}
+  .hud-grid{grid-template-columns:repeat(2,1fr);}
+  .mission-progress{padding:10px;border-radius:10px;}
+  .progress-title,.progress-value{font-size:0.7rem;}
+  #camera-bar{top:60px;padding:4px 8px;}
+  #camera-bar .cam-btn{display:none;}
+  #camera-bar::after{content:'Select View';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.5rem;color:var(--text-muted);}
+  .camera-select{position:absolute;top:50%;right:8px;transform:translateY(-50%);background:rgba(0,255,136,0.1);border:1px solid var(--glass-border);border-radius:8px;padding:4px 8px;color:var(--text-secondary);font-size:0.55rem;font-family:'Exo 2',sans-serif;z-index:10;cursor:pointer;}
+  .fab-container{bottom:80px;right:12px;}
+  .fab-main{width:48px;height:48px;font-size:20px;}
+  .fab-item{width:40px;height:40px;font-size:16px;}
+  .coordination-display{min-width:90%;}
+  .coordination-display.show{display:block;}
+}
+
+body.panel-open{overflow:hidden;}
+body.panel-open #canvas{pointer-events:none;}
   </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
 
 <div id="topbar">
+  <button class="mobile-menu-btn" onclick="toggleMobileMenu('left')">
+    <span></span><span></span><span></span>
+  </button>
   <div class="brand">
     <div class="brand-icon">🚁</div>
-    AgriMind Fleet Command
+    <span class="brand-text">AgriMind Fleet Command</span>
   </div>
   
   <div class="fleet-status">
@@ -535,9 +624,16 @@ body::before{
 </div>
 
 <div id="camera-bar">
+  <select class="camera-select" onchange="setCameraMode(this.value)">
+    <option value="overview">Overview</option>
+    <option value="follow">Follow</option>
+    <option value="topdown">Top-Down</option>
+    <option value="cinematic">Cinematic</option>
+    <option value="side">Side</option>
+  </select>
   <button class="cam-btn active" onclick="setCameraMode('overview')" id="cam-overview">🌍 Overview</button>
   <button class="cam-btn" onclick="setCameraMode('follow')" id="cam-follow">🚁 Follow</button>
-  <button class="cam-btn" onclick="setCameraMode('topdown')" id="cam-topdown">¬‡ï¸ Top-Down</button>
+  <button class="cam-btn" onclick="setCameraMode('topdown')" id="cam-topdown">⛫ Top-Down</button>
   <button class="cam-btn" onclick="setCameraMode('cinematic')" id="cam-cinematic">🎬 Cinematic</button>
   <button class="cam-btn" onclick="setCameraMode('side')" id="cam-side">👁️ Side</button>
 </div>
@@ -1296,8 +1392,25 @@ function generateDroneCards() {
         <div class="stat-item">
           <span>Pesticide</span>
           <span class="stat-value" id="pest-${config.id}">${config.pesticide}L</span>
-        </div>
-      </div>
+  </div>
+  
+  <button class="mobile-menu-btn" onclick="toggleMobileMenu('right')" style="margin-left:auto;">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<div class="panel-overlay" id="panel-overlay" onclick="closeMobileMenus()"></div>
+
+<div class="fab-container">
+  <div class="fab-menu" id="fab-menu">
+    <button class="fab-item danger" onclick="emergencyStop();closeFab()" title="Emergency Stop">⛔</button>
+    <button class="fab-item warning" onclick="returnAllToBase();closeFab()" title="Return All">↔</button>
+    <button class="fab-item" onclick="toggleNightMode();closeFab()" title="Night Mode">🌙</button>
+    <button class="fab-item" onclick="toggleMobileMenu('right');closeFab()" title="Controls">🎮</button>
+    <button class="fab-item" onclick="toggleMobileMenu('left');closeFab()" title="Drones">🚁</button>
+  </div>
+  <button class="fab-main" id="fab-main" onclick="toggleFab()">☰</button>
+</div>
       <div class="battery-indicator">
         <div class="battery-fill" id="fill-${config.id}" style="width:${config.battery}%; background:var(--success)"></div>
       </div>
@@ -1767,6 +1880,60 @@ window.showToast = (message, type = 'success') => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 400);
   }, 3000);
+};
+
+window.toggleMobileMenu = (side) => {
+  const leftPanel = document.getElementById('left-panel');
+  const rightPanel = document.getElementById('right-panel');
+  const overlay = document.getElementById('panel-overlay');
+  
+  if (side === 'left') {
+    const isOpen = leftPanel.classList.contains('open');
+    closeMobileMenus();
+    if (!isOpen) {
+      leftPanel.classList.add('open');
+      overlay.classList.add('show');
+      document.body.classList.add('panel-open');
+    }
+  } else {
+    const isOpen = rightPanel.classList.contains('open');
+    closeMobileMenus();
+    if (!isOpen) {
+      rightPanel.classList.add('open');
+      overlay.classList.add('show');
+      document.body.classList.add('panel-open');
+    }
+  }
+};
+
+window.closeMobileMenus = () => {
+  document.getElementById('left-panel').classList.remove('open');
+  document.getElementById('right-panel').classList.remove('open');
+  document.getElementById('panel-overlay').classList.remove('show');
+  document.body.classList.remove('panel-open');
+};
+
+window.toggleFab = () => {
+  const main = document.getElementById('fab-main');
+  const menu = document.getElementById('fab-menu');
+  main.classList.toggle('active');
+  menu.classList.toggle('open');
+};
+
+window.closeFab = () => {
+  document.getElementById('fab-main').classList.remove('active');
+  document.getElementById('fab-menu').classList.remove('open');
+};
+
+window.updateCameraSelect = (mode) => {
+  const select = document.querySelector('.camera-select');
+  if (select) select.value = mode;
+};
+
+const originalSetCameraMode = window.setCameraMode;
+window.setCameraMode = (mode) => {
+  if (originalSetCameraMode) originalSetCameraMode(mode);
+  updateCameraSelect(mode);
 };
 
 init();
