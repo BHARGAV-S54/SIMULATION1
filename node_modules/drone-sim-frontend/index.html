@@ -539,9 +539,9 @@ body.panel-open #canvas{pointer-events:none;}
         <div class="btn-icon">↔</div>
         <div class="btn-label">Return All</div>
       </div>
-      <div class="control-btn" id="emergency-stop" onclick="emergencyStop()">
-        <div class="btn-icon">⛔</div>
-        <div class="btn-label">Emergency</div>
+      <div class="control-btn" id="launch-all" onclick="launchAllDrones()">
+        <div class="btn-icon">🚀</div>
+        <div class="btn-label">Launch</div>
       </div>
       <div class="control-btn" id="night-mode" onclick="toggleNightMode()">
         <div class="btn-icon">🌙</div>
@@ -1301,7 +1301,7 @@ function createDrones() {
       id: config.id,
       battery: config.battery,
       pesticide: config.pesticide,
-      status: 'active',
+      status: 'docked',
       rotors,
       scanCone,
       mistRing,
@@ -1309,12 +1309,14 @@ function createDrones() {
       waypoints,
       currentWaypoint: 0,
       velocity: { x: 0, z: 0 },
-      patrolActive: true,
+      patrolActive: false,
       sprayActive: false,
       returning: false,
       targetPosition: null,
       targetingBug: null
     };
+    
+    droneGroup.position.set(45, 12, -35);
     
     scene.add(droneGroup);
     return droneGroup;
@@ -1382,7 +1384,7 @@ function generateDroneCards() {
     card.innerHTML = `
       <div class="drone-header">
         <div class="drone-name">${config.id}</div>
-        <div class="drone-status active" id="status-${config.id}">ACTIVE</div>
+        <div class="drone-status charging" id="status-${config.id}">DOCKED</div>
       </div>
       <div class="drone-stats">
         <div class="stat-item">
@@ -1403,7 +1405,7 @@ function generateDroneCards() {
 
 <div class="fab-container">
   <div class="fab-menu" id="fab-menu">
-    <button class="fab-item danger" onclick="emergencyStop();closeFab()" title="Emergency Stop">⛔</button>
+    <button class="fab-item" onclick="launchAllDrones();closeFab()" title="Launch">🚀</button>
     <button class="fab-item warning" onclick="returnAllToBase();closeFab()" title="Return All">↔</button>
     <button class="fab-item" onclick="toggleNightMode();closeFab()" title="Night Mode">🌙</button>
     <button class="fab-item" onclick="toggleMobileMenu('right');closeFab()" title="Controls">🎮</button>
@@ -1460,10 +1462,10 @@ function updateDronePositions(delta) {
         ud.currentWaypoint = (ud.currentWaypoint + 1) % ud.waypoints.length;
       }
       
-      const moveSpeed = 5;
+      const moveSpeed = 2;
       if (dist > 0) {
-        drone.position.x += (dx / dist) * moveSpeed * delta * 60;
-        drone.position.z += (dz / dist) * moveSpeed * delta * 60;
+        drone.position.x += (dx / dist) * moveSpeed * delta * 10;
+        drone.position.z += (dz / dist) * moveSpeed * delta * 10;
       }
       
       drone.position.x += Math.sin(currentTime * 0.5 + index * 1.5) * 0.3;
@@ -1494,9 +1496,9 @@ function updateDronePositions(delta) {
         return;
       }
       
-      const returnSpeed = 8;
-      drone.position.x += (dx / dist) * returnSpeed * delta * 60;
-      drone.position.z += (dz / dist) * returnSpeed * delta * 60;
+      const returnSpeed = 3;
+      drone.position.x += (dx / dist) * returnSpeed * delta * 10;
+      drone.position.z += (dz / dist) * returnSpeed * delta * 10;
       drone.position.y += (12 - drone.position.y) * 0.05;
       
       const targetYaw = Math.atan2(dx, dz);
@@ -1861,6 +1863,27 @@ window.emergencyStop = () => {
   emergencyActive = !emergencyActive;
   document.getElementById('emergency-stop').classList.toggle('active', emergencyActive);
   showToast(emergencyActive ? 'EMERGENCY STOP ACTIVATED' : 'Emergency Stop Deactivated', 'danger');
+};
+
+window.launchAllDrones = () => {
+  const startPositions = [
+    { x: -120, z: -120 },
+    { x: 40, z: -120 },
+    { x: 200, z: -120 }
+  ];
+  drones.forEach((d, i) => {
+    d.userData.returning = false;
+    d.userData.patrolActive = true;
+    d.userData.status = 'active';
+    d.userData.targetingBug = null;
+    if (startPositions[i]) {
+      d.position.x = startPositions[i].x;
+      d.position.z = startPositions[i].z;
+      d.position.y = 14;
+    }
+  });
+  playReturnSound();
+  showToast('All Drones Launched from Base', 'success');
 };
 
 window.toggleNightMode = () => {
