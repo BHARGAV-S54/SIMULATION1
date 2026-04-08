@@ -1460,7 +1460,7 @@ function updateDronePositions(delta) {
         ud.currentWaypoint = (ud.currentWaypoint + 1) % ud.waypoints.length;
       }
       
-      const moveSpeed = 12;
+      const moveSpeed = 5;
       if (dist > 0) {
         drone.position.x += (dx / dist) * moveSpeed * delta * 60;
         drone.position.z += (dz / dist) * moveSpeed * delta * 60;
@@ -1494,7 +1494,7 @@ function updateDronePositions(delta) {
         return;
       }
       
-      const returnSpeed = 15;
+      const returnSpeed = 8;
       drone.position.x += (dx / dist) * returnSpeed * delta * 60;
       drone.position.z += (dz / dist) * returnSpeed * delta * 60;
       drone.position.y += (12 - drone.position.y) * 0.05;
